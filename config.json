@@ -1,0 +1,36 @@
+{
+    "standard_window_size": 128,
+    "standard_hz": 50,
+    "axes": ["AccX", "AccY", "AccZ", "GyrX", "GyrY", "GyrZ"],
+
+    "datasets": {
+        "KU_HAR": {
+            "path": "Dataset/Preprocessed/Windowed/KU-HAR_50Hz_2.56s.csv",
+            "dataset_name": "KU-HAR",
+            "default_condition": "Healthy",
+            "default_age": null,
+            "default_gender": null
+        },
+        "HARTH": {
+            "path": "Dataset/Preprocessed/Windowed/HARTH_50Hz_2.56s.csv",
+            "dataset_name": "HARTH",
+            "default_condition": "Healthy",
+            "default_age": null,
+            "default_gender": null
+        },
+        "UCI_HAR": {
+            "path": "Dataset/Preprocessed/Windowed/UCI_HAR_50Hz_2.56s.csv",
+            "dataset_name": "UCI_HAR",
+            "default_condition": "Healthy",
+            "default_age": "19-48",
+            "default_gender": null
+        },
+        "RealDISP": {
+            "path": "Dataset/Preprocessed/Windowed/RealDISP_50Hz_2.56s.csv",
+            "dataset_name": "RealDISP",
+            "default_condition": "Healthy",
+            "default_age": "20-30",
+            "default_gender": null
+        }
+    }
+}
