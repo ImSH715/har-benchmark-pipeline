@@ -17,3 +17,7 @@ A config-driven preprocessing pipeline that harmonises heterogeneous Human Activ
 4. **Quality Control** — Outlier clipping (Acc ±157 m/s², Gyr ±34.9 rad/s)
 5. **Feature Extraction** — Statistical features (mean, std, RMS, skew, kurtosis)
 6. **Train/Val/Test Split** — Stratified 70/15/15 split with metadata retention
+
+## Gitignore
+- Dataset folder is excluded. 
+- Require manual dataset download.
