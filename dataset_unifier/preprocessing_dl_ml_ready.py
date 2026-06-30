@@ -15,18 +15,15 @@ print("Train and Test Split + Normalisation + Feature Extraction")
 
 # Path Configuration
 BASE_DIR = 'Dataset/Preprocessed'
-os.makedirs(f"{BASE_DIR}/Training", exist_ok=True)
-WINDOWED_DIR = f'{BASE_DIR}/Windowed'
-COMBINED_DIR = f'{BASE_DIR}/Combined/combined_dataset.csv'
-
+LABELED_DIR = f'{BASE_DIR}/label_unified'
 OUTPUT_DIR = BASE_DIR
 
 # Load Windowed Datasets
 datasets = {
-    'KU-HAR': pd.read_csv(f"{WINDOWED_DIR}/KU-HAR_50Hz_2.56s.csv"),
-    'HARTH': pd.read_csv(f"{WINDOWED_DIR}/HARTH_50Hz_2.56s.csv",),
-    'UCI_HAR': pd.read_csv(f"{WINDOWED_DIR}/UCI_HAR_50Hz_2.56s.csv"),
-    'RealDISP': pd.read_csv(f"{WINDOWED_DIR}/RealDISP_50Hz_2.56s.csv")
+    'KU-HAR': pd.read_csv(f"{LABELED_DIR}/KU_HAR_unified.csv"),
+    'HARTH': pd.read_csv(f"{LABELED_DIR}/HARTH_unified.csv",),
+    'UCI_HAR': pd.read_csv(f"{LABELED_DIR}/UCI_HAR_unified.csv"),
+    'RealDISP': pd.read_csv(f"{LABELED_DIR}/RealDISP_unified.csv")
 }
 # Check Shapes
 for name, df in datasets.items():
@@ -45,14 +42,14 @@ print(f"Combined windowed data: {combined_df.shape}")
 sensor_cols = [c for c in combined_df.columns if c not in ['dataset_name', 'label']]
 
 X = combined_df[sensor_cols].values
-Y = combined_df[sensor_cols].values
+y = combined_df['label'].values
 dataset_names = combined_df['dataset_name'].values
 
 # Train/ Val/ Test Split
 # Test (15%)
-X_temp, X_test, Y_temp, Y_test, ds_temp, ds_test = train_test_split(X, Y, dataset_names, test_size=0.15, random_state=43)
+X_temp, X_test, y_temp, y_test, ds_temp, ds_test = train_test_split(X, y, dataset_names, test_size=0.15, random_state=43, stratify=y)
 # Val from remaining
-X_train, X_val, Y_train, Y_val, ds_train, ds_val = train_test_split(X_temp, Y_temp, ds_temp, test_size=0.176, random_state=42, stratify=Y_temp)
+X_train, X_val, y_train, y_val, ds_train, ds_val = train_test_split(X_temp, y_temp, ds_temp, test_size=0.176, random_state=43, stratify=y_temp)
 
 print(f"\nTrain: {X_train.shape}")
 print(f"Test: {X_test.shape}")
@@ -89,9 +86,9 @@ def extract_features(X_flat):
         feats.append(np.mean(axis_data, axis=1))
         feats.append(np.std(axis_data, axis=1))
         feats.append(np.max(axis_data, axis=1))
-        feats.append(np.median(axis_data, axis=1))
         feats.append(np.min(axis_data, axis=1))
-        feats.append(np.max(axis_data, axis=1)- np.min(axis_data, axis=1))
+        feats.append(np.median(axis_data, axis=1))        
+        feats.append(np.max(axis_data, axis=1) - np.min(axis_data, axis=1))
         feats.append(np.sqrt(np.mean(axis_data**2, axis=1)))
         feats.append(skew(axis_data, axis=1))
         feats.append(kurtosis(axis_data, axis=1))
@@ -105,8 +102,8 @@ X_val_feat = extract_features(X_val)
 # Normalising features
 scaler_feat = StandardScaler()
 X_train_feat = scaler_feat.fit_transform(X_train_feat)
-X_val_feat = scaler_feat.fit_transform(X_val_feat)
-X_test_feat = scaler_feat.fit_transform(X_test_feat)
+X_val_feat = scaler_feat.transform(X_val_feat)
+X_test_feat = scaler_feat.transform(X_test_feat)
 
 print("Train Shape: ", X_train_feat.shape)
 print("Test Shape: ", X_test_feat.shape)
@@ -120,9 +117,9 @@ for subdir in ['for_dl', 'for_ml', 'metadata', 'scalers']:
 np.save(f'{OUTPUT_DIR}/for_dl/X_train.npy', X_train_dl)
 np.save(f'{OUTPUT_DIR}/for_dl/X_test.npy', X_test_dl)
 np.save(f'{OUTPUT_DIR}/for_dl/X_val.npy', X_val_dl)
-np.save(f'{OUTPUT_DIR}/for_dl/Y_train.npy', Y_train)
-np.save(f'{OUTPUT_DIR}/for_dl/Y_test.npy', Y_test)
-np.save(f'{OUTPUT_DIR}/for_dl/Y_val.npy', Y_val)
+np.save(f'{OUTPUT_DIR}/for_dl/y_train.npy', y_train)
+np.save(f'{OUTPUT_DIR}/for_dl/y_test.npy', y_test)
+np.save(f'{OUTPUT_DIR}/for_dl/y_val.npy', y_val)
 print(f"\nDL saved : {OUTPUT_DIR}/for_dl/")
 
 # For machine learning
@@ -154,11 +151,16 @@ for u, c in zip(unique, counts):
     print(f"  Label {int(u)}: {c}")
 
 print(f"\n[Source] Train dataset distribution:")
+meta_train = pd.DataFrame({'dataset_name': ds_train, 'label': y_train})
 print(meta_train['dataset_name'].value_counts())
 
-print("\n" + "=" * 60)
+meta_train.to_csv(f'{OUTPUT_DIR}/metadata/meta_train.csv', index=False)
+meta_test = pd.DataFrame({'dataset_name': ds_test, 'label': y_test})
+meta_val = pd.DataFrame({'dataset_name': ds_val, 'label': y_val})
+meta_test.to_csv(f'{OUTPUT_DIR}/metadata/meta_test.csv', index=False)
+meta_val.to_csv(f'{OUTPUT_DIR}/metadata/meta_val.csv', index=False)
+
 print("PREPROCESSING COMPLETE!")
-print("=" * 60)
 print(f"\nReady for ML/DL training:")
 print(f"  - Random Forest / SVM / XGBoost: use {OUTPUT_DIR}/for_ml/")
 print(f"  - CNN / LSTM / CNN-LSTM: use {OUTPUT_DIR}/for_dl/")
