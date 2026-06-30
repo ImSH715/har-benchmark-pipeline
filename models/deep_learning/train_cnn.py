@@ -18,11 +18,11 @@ print("=" * 60)
 print("1D CNN Baseline (PyTorch)")
 print("=" * 60)
 
-# 1. DEVICE SETUP
+# DEVICE SETUP
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using device: {device}")
 
-# 2. LOAD DATA
+# LOAD DATA
 BASE_DIR = '../../Dataset/Preprocessed/for_dl'
 
 X_train = np.load(f'{BASE_DIR}/X_train.npy')   # (17867, 128, 6)
@@ -40,9 +40,7 @@ y_test  = y_test - 1
 
 print(f"Train: {X_train.shape}, Val: {X_val.shape}, Test: {X_test.shape}")
 
-# ==========================================
-# 3. DATASET / DATALOADER
-# ==========================================
+# DATASET / DATALOADER
 # PyTorch : tensor conversion
 # Conv1d 
 X_train_t = torch.FloatTensor(X_train).permute(0, 2, 1)
@@ -59,7 +57,7 @@ train_loader = DataLoader(TensorDataset(X_train_t, y_train_t), batch_size=batch_
 val_loader   = DataLoader(TensorDataset(X_val_t, y_val_t), batch_size=batch_size)
 test_loader  = DataLoader(TensorDataset(X_test_t, y_test_t), batch_size=batch_size)
 
-# 4. MODEL DEFINITION
+# MODEL DEFINITION
 class CNN1D(nn.Module):
     def __init__(self, num_classes=11):
         super(CNN1D, self).__init__()
@@ -103,11 +101,11 @@ class CNN1D(nn.Module):
 model = CNN1D(num_classes=11).to(device)
 print(f"\nModel:\n{model}")
 
-# 5. LOSS / OPTIMIZER
+# LOSS / OPTIMIZER
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-# 6. TRAINING LOOP
+# TRAINING LOOP
 num_epochs = 30
 best_val_acc = 0.0
 
@@ -152,7 +150,7 @@ for epoch in range(num_epochs):
 # Best weights load
 model.load_state_dict(best_model_state)
 
-# 7. TEST EVALUATION
+# TEST EVALUATION
 print("\nEvaluating on Test set...")
 model.eval()
 test_preds = []
@@ -178,7 +176,7 @@ print(f"Test Accuracy:     {test_acc:.4f}")
 print("\nClassification Report (Test):")
 print(classification_report(test_labels_original, test_preds_original))
 
-# 8. SAVE MODEL & RESULTS
+# SAVE MODEL & RESULTS
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 model_dir = '../../saved_models'
