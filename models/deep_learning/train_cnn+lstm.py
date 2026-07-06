@@ -19,7 +19,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using device: {device}")
 
 # LOAD DATA
-BASE_DIR = '../../Dataset/Preprocessed/for_dl'
+BASE_DIR = '../../Dataset/Preprocessed/for_dl_no_shuffle'
 
 X_train = np.load(f'{BASE_DIR}/X_train.npy')
 X_val   = np.load(f'{BASE_DIR}/X_val.npy')
@@ -51,7 +51,6 @@ class CNN_LSTM(nn.Module):
         super(CNN_LSTM, self).__init__()
         
         # ========== CNN Encoder ==========
-        # Input: (batch, 6, 128)
         self.conv1 = nn.Conv1d(6, 64, kernel_size=3, padding=1)
         self.relu1 = nn.ReLU()
         self.pool1 = nn.MaxPool1d(2)   # 128 → 64
@@ -195,6 +194,4 @@ with open(result_path, 'w') as f:
     json.dump(results, f, indent=2)
 print(f"Results saved: {result_path}")
 
-print("\n" + "=" * 60)
 print("DONE")
-print("=" * 60)

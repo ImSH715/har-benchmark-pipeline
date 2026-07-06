@@ -19,20 +19,34 @@ print("=" * 60)
 # 1. CONFIGURATION
 # ==========================================
 # OPTIONS: 'cnn', 'lstm', 'cnn_lstm'
-MODEL_TYPE = 'cnn'  # Change the model type 
+MODEL_TYPE = 'cnn_lstm' 
 
 # File paths
-MODEL_PATH = '../../saved_models/cnn1d_20260629_154423.pth' # Change the model path based on the MODEL_TYPE
-BASE_DIR = '../../Dataset/Preprocessed/for_dl'
+MODEL_PATH = '../../saved_models/cnn_lstm_20260630_142946.pth'
+BASE_DIR = '../../Dataset/Preprocessed/for_dl_no_shuffle'
 META_DIR = '../../Dataset/Preprocessed/metadata'
 
 # Visualization config
-SAMPLE_SIZE = 17867 # total
+SAMPLE_SIZE = 17867 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Device: {device}")
 print(f"Model type: {MODEL_TYPE}")
 print(f"Model file: {MODEL_PATH}")
+
+LABEL_NAMES = {
+    0: 'WALKING',
+    1: 'WALKING_UPSTAIRS',
+    2: 'WALKING_DOWNSTAIRS',
+    3: 'SITTING',
+    4: 'STANDING',
+    5: 'LAYING',
+    6: 'RUNNING',
+    7: 'SHUFFLING',
+    8: 'PICKING',
+    9: 'JUMPING',
+    10: 'CYCLING'
+}
 
 # ==========================================
 # 2. MODEL DEFINITIONS
@@ -86,14 +100,14 @@ class CNN_LSTM(nn.Module):
         x = x.permute(0, 2, 1)  # (N,6,128)
         x = self.pool1(torch.relu(self.conv1(x)))
         x = self.pool2(torch.relu(self.conv2(x)))
-        x = x.permute(0, 2, 1) 
+        x = x.permute(0, 2, 1)
         lstm_out, (hidden, cell) = self.lstm(x)
         last_hidden = lstm_out[:, -1, :]  # (N, 128)
         out = self.fc(last_hidden)
         return out
 
 # ==========================================
-# 3. EMBEDDING EXTRACTOR
+# 3. EMBEDDING EXTRACTOR (각 모델별로 다름)
 # ==========================================
 def extract_embeddings(model, model_type, X_tensor, device):
     """
@@ -112,7 +126,7 @@ def extract_embeddings(model, model_type, X_tensor, device):
             batch = X_tensor[i:i+batch_size]
             
             if model_type == 'cnn':
-                # CNN1D: Conv → Pool → Conv → Pool → Flatten → fc1 embedding
+                # CNN1D: Conv → Pool → Conv → Pool → Flatten → fc1 (임베딩)
                 x = batch.permute(0, 2, 1)
                 x = model.pool1(torch.relu(model.conv1(x)))
                 x = model.pool2(torch.relu(model.conv2(x)))
@@ -121,13 +135,13 @@ def extract_embeddings(model, model_type, X_tensor, device):
                 out = model.fc2(model.dropout(emb))
                 
             elif model_type == 'lstm':
-                # LSTM: LSTM → last hidden embedding
+                # LSTM: LSTM 통과 → 마지막 hidden (임베딩)
                 lstm_out, (hidden, cell) = model.lstm(batch)
                 emb = lstm_out[:, -1, :]  # ← Embedding (N, 128)
                 out = model.fc(emb)
                 
             elif model_type == 'cnn_lstm':
-                # CNN-LSTM: Conv → Pool twice → LSTM → last hidden embeddin
+                # CNN-LSTM: Conv → Pool 두 번 → LSTM → 마지막 hidden (임베딩)
                 x = batch.permute(0, 2, 1)
                 x = model.pool1(torch.relu(model.conv1(x)))
                 x = model.pool2(torch.relu(model.conv2(x)))
@@ -151,6 +165,7 @@ def extract_embeddings(model, model_type, X_tensor, device):
 model_map = {'cnn': CNN1D, 'lstm': LSTMClassifier, 'cnn_lstm': CNN_LSTM}
 ModelClass = model_map[MODEL_TYPE]
 
+# Checkpoint에서 num_classes 추론
 checkpoint = torch.load(MODEL_PATH, map_location=device)
 num_classes = None
 for key in ['fc.weight', 'fc2.weight']:
@@ -186,6 +201,7 @@ ds_sample = dataset_names[idx]
 
 print(f"Data loaded: {X_sample.shape}")
 
+# Convert to tensor (extract_embeddings 안에서 permute 처리)
 X_t = torch.FloatTensor(X_sample).to(device)
 
 # ==========================================
@@ -210,16 +226,48 @@ tsne = TSNE(n_components=2, random_state=42, perplexity=30, n_iter=1000)
 X_tsne = tsne.fit_transform(embeddings)
 
 # ==========================================
-# 8. PLOT FUNCTION
+# 8. PLOT FUNCTION (with legend)
 # ==========================================
-def plot_2d(X_2d, color_vals, title, cmap='tab10', save_path=None):
-    plt.figure(figsize=(10, 8))
-    scatter = plt.scatter(X_2d[:, 0], X_2d[:, 1], c=color_vals, cmap=cmap, alpha=0.6, s=10)
-    plt.colorbar(scatter)
+def plot_2d(X_2d, color_vals, title, label_map=None, cmap='tab20', save_path=None):
+    """
+    X_2d: (N, 2) 좌표
+    color_vals: (N,) 클래스 번호 (0-based)
+    label_map: {0: 'WALKING', 1: 'WALKING_UPSTAIRS', ...}
+    """
+    plt.figure(figsize=(13, 9))
+    
+    unique_labels = sorted(np.unique(color_vals))
+    n_classes = len(unique_labels)
+    
+    # 클래스 개수만큼 색상 분할 (11개면 11개 색)
+    colors = plt.cm.get_cmap(cmap, n_classes)
+    
+    for i, lbl in enumerate(unique_labels):
+        mask = (color_vals == lbl)
+        name = label_map[lbl] if (label_map and lbl in label_map) else f"Class {lbl}"
+        
+        plt.scatter(
+            X_2d[mask, 0], X_2d[mask, 1],
+            c=[colors(i)],      # 각 클래스별 고유 색
+            label=name,
+            alpha=0.6,
+            s=10,
+            edgecolors='none'
+        )
+    
+    # 범례를 그래프 오른쪽에 배치
+    plt.legend(
+        title="Activity",
+        bbox_to_anchor=(1.02, 1),
+        loc='upper left',
+        borderaxespad=0.,
+        fontsize=9
+    )
+    
     plt.title(title, fontsize=14)
     plt.xlabel('Component 1')
     plt.ylabel('Component 2')
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 0.85, 1])  # 오른쪽에 legend 공간 확보
     
     if save_path:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -230,23 +278,34 @@ def plot_2d(X_2d, color_vals, title, cmap='tab10', save_path=None):
 # ==========================================
 # 9. PLOTS
 # ==========================================
-plot_2d(X_tsne, y_sample, 
-        title=f'{MODEL_TYPE.upper()} Embedding (t-SNE) - TRUE LABELS',
-        save_path=f'figures/{MODEL_TYPE}_tsne_true_label.png')
+plot_2d(
+    X_tsne, y_sample,
+    title=f'{MODEL_TYPE.upper()} Embedding (t-SNE) - TRUE LABELS',
+    label_map=LABEL_NAMES,
+    save_path=f'figures/{MODEL_TYPE}_tsne_true_label.png'
+)
 
-plot_2d(X_tsne, predictions, 
-        title=f'{MODEL_TYPE.upper()} Embedding (t-SNE) - PREDICTIONS',
-        save_path=f'figures/{MODEL_TYPE}_tsne_pred.png')
+plot_2d(
+    X_tsne, predictions,
+    title=f'{MODEL_TYPE.upper()} Embedding (t-SNE) - PREDICTIONS',
+    label_map=LABEL_NAMES,
+    save_path=f'figures/{MODEL_TYPE}_tsne_pred.png'
+)
 
 ds_map = {name: i for i, name in enumerate(np.unique(ds_sample))}
 ds_numeric = np.array([ds_map[name] for name in ds_sample])
-plot_2d(X_tsne, ds_numeric, 
-        title=f'{MODEL_TYPE.upper()} Embedding (t-SNE) - DATASET SOURCE',
-        cmap='Set1',
-        save_path=f'figures/{MODEL_TYPE}_tsne_dataset.png')
+plot_2d(
+    X_tsne, ds_numeric,
+    title=f'{MODEL_TYPE.upper()} Embedding (t-SNE) - DATASET SOURCE',
+    cmap='Set1',
+    save_path=f'figures/{MODEL_TYPE}_tsne_dataset.png'
+)
 
-plot_2d(X_pca, y_sample, 
-        title=f'{MODEL_TYPE.upper()} Embedding (PCA) - TRUE LABELS',
-        save_path=f'figures/{MODEL_TYPE}_pca_true_label.png')
+plot_2d(
+    X_pca, y_sample,
+    title=f'{MODEL_TYPE.upper()} Embedding (PCA) - TRUE LABELS',
+    label_map=LABEL_NAMES,
+    save_path=f'figures/{MODEL_TYPE}_pca_true_label.png'
+)
 
 print("\nDone")
