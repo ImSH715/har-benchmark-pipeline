@@ -1,32 +1,24 @@
 #!/bin/bash
 #SBATCH --job-name=simclr_har
-#SBATCH --partition=sheffield
+#SBATCH --partition=gpu
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 #SBATCH --time=24:00:00
 #SBATCH --output=logs/simclr_%j.out
 #SBATCH --error=logs/simclr_%j.err
 
-# ==========================================
-# 1. Conda 직접 로드 (계산 노드용)
-# ==========================================
 source /opt/apps/testapps/common/software/staging/Anaconda3/2024.02-1/etc/profile.d/conda.sh
 
 # 환경 활성화
 conda activate lejepa
 
-# 확인 (로그에 기록됨)
 echo "Python path: $(which python)"
 echo "Python version: $(python --version)"
 echo "PyTorch version: $(python -c 'import torch; print(torch.__version__)')"
 
-# ==========================================
-# 2. 프로젝트 디렉토리로 이동
-# ==========================================
+# =======================================
 cd /mnt/parscratch/users/acb20si/har-benchmark-pipeline/models/deep_learning
 
-# ==========================================
-# 3. 실행 (절대경로 python 사용)
 # ==========================================
 echo "Starting SimCLR training at $(date)"
 
