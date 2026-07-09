@@ -9,7 +9,10 @@
 #SBATCH --error=logs/simclr_%j.err 
 
 
-source ~/venv/bin/activate     
+
+source ~/venv/bin/activate  
+
+conda activate lejepa
 python self_supervised.py
 
 echo "Job finished"
