@@ -10,6 +10,6 @@
 
 
 source ~/venv/bin/activate     
-python train_simclr.py
+python self_supervised.py
 
 echo "Job finished"
