@@ -25,11 +25,12 @@ EMB_DIR = '../embeddings'
 LABEL_DIR = '../Dataset/Preprocessed/for_dl'
 
 # Embeddings extracted from CNN-LSTM (before final FC layer)
-X_train = np.load(f'{EMB_DIR}/cnn_lstm_emb_train.npy')
-X_test  = np.load(f'{EMB_DIR}/cnn_lstm_emb_test.npy')
-
+#X_train = np.load(f'{EMB_DIR}/cnn_lstm_emb_train.npy')
+#X_test  = np.load(f'{EMB_DIR}/cnn_lstm_emb_test.npy')
+X_train = np.load(f'{EMB_DIR}/simclr_emb_train.npy')
+X_test  = np.load(f'{EMB_DIR}/simclr_emb_test.npy')
 # Labels are used ONLY for final evaluation (never during clustering)
-y_train = np.load(f'{LABEL_DIR}/y_train.npy')  # 1-based
+y_train = np.load(f'{LABEL_DIR}/y_train.npy')  # 1-based original labels
 y_test  = np.load(f'{LABEL_DIR}/y_test.npy')
 
 print(f"Train embeddings: {X_train.shape}")
@@ -38,8 +39,6 @@ print(f"Unique labels in test: {sorted(np.unique(y_test))}")
 
 # ==========================================
 # 2. OPTIONAL PREPROCESSING
-# Embeddings are already learned representations, but scaling helps K-means.
-# PCA is optional; you can comment it out to use raw 128-dim embeddings.
 # ==========================================
 USE_PCA = False  # Set to True if you want to reduce dimensions
 
@@ -60,48 +59,44 @@ else:
 # ==========================================
 # 3. K-MEANS CLUSTERING (unsupervised)
 # ==========================================
-# Number of clusters = number of unique true classes
 n_clusters = len(np.unique(y_train))
 print(f"\nTraining K-means with k={n_clusters} ...")
 
 kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
-kmeans.fit(X_train_proc)  # <-- NO labels used here
+kmeans.fit(X_train_proc)
 
-# Predict clusters on test set
 cluster_pred = kmeans.predict(X_test_proc)
 
 # ==========================================
 # 4. HUNGARIAN MATCHING (cluster -> true label)
 # ==========================================
-# Get sorted list of actual label values present in the dataset
-true_labels = sorted(np.unique(y_test))
+# CRITICAL FIX: Convert y_test to 0-based so that both y_test and cluster_pred
+# are in the SAME range (0~10). This avoids confusion_matrix shape mismatch
+# between 1-based labels and 0-based cluster ids.
+y_test_0based = y_test - 1  # 1~11 -> 0~10
 
-# Build confusion matrix between true labels and cluster IDs.
-# We pass 'labels=true_labels' so each row corresponds to an actual label value.
-cm = confusion_matrix(y_test, cluster_pred, labels=true_labels)
+# Build confusion matrix with both in 0~10 range -> guaranteed (11, 11)
+cm = confusion_matrix(y_test_0based, cluster_pred)
 
-# Hungarian algorithm finds the optimal one-to-one assignment
-# between rows (true labels) and columns (clusters) by maximizing overlap.
+# Hungarian algorithm: rows = true labels (0~10), cols = clusters (0~10)
 row_ind, col_ind = linear_sum_assignment(-cm)
 
-# row_ind contains matrix ROW INDICES (0, 1, 2...), NOT the actual label values.
-# We index into 'true_labels' to recover the real label.
-mapping = {cluster_id: true_labels[row_idx]
-           for row_idx, cluster_id in zip(row_ind, col_ind)}
+# mapping: {cluster_id: true_label_0based}
+mapping = {int(col): int(row) for row, col in zip(row_ind, col_ind)}
 
-# Pretty-print mapping
 label_names = {
-    1: 'WALKING', 2: 'WALKING_UPSTAIRS', 3: 'WALKING_DOWNSTAIRS',
-    4: 'SITTING', 5: 'STANDING', 6: 'LAYING',
-    7: 'RUNNING', 8: 'SHUFFLING', 9: 'PICKING',
-    10: 'JUMPING', 11: 'CYCLING'
+    0: 'WALKING', 1: 'WALKING_UPSTAIRS', 2: 'WALKING_DOWNSTAIRS',
+    3: 'SITTING', 4: 'STANDING', 5: 'LAYING',
+    6: 'RUNNING', 7: 'SHUFFLING', 8: 'PICKING',
+    9: 'JUMPING', 10: 'CYCLING'
 }
 print("\nCluster -> Label Mapping:")
 for c, l in sorted(mapping.items()):
-    print(f"  Cluster {c:2d} -> Label {l:2d} ({label_names.get(l, '?')})")
+    print(f"  Cluster {c:2d} -> Label {l+1:2d} ({label_names.get(l, '?')})")
 
-# Convert cluster IDs to predicted labels using the mapping
-mapped_pred = np.array([mapping.get(c, -1) for c in cluster_pred])
+# Apply mapping and convert back to 1-based labels
+mapped_pred_0based = np.array([mapping.get(int(c), -1) for c in cluster_pred])
+mapped_pred = mapped_pred_0based + 1  # back to 1~11
 
 # ==========================================
 # 5. EVALUATION (F1-score against ground truth)
@@ -111,11 +106,11 @@ print(f"\n{'='*60}")
 print(f"Accuracy: {acc:.4f}")
 print(f"{'='*60}")
 
-target_names = [label_names.get(lbl, f'Class_{lbl}') for lbl in true_labels]
+target_names = [label_names.get(lbl-1, f'Class_{lbl}') for lbl in sorted(np.unique(y_test))]
 print("\nClassification Report:")
 print(classification_report(
     y_test, mapped_pred,
-    labels=true_labels,
+    labels=sorted(np.unique(y_test)),
     target_names=target_names
 ))
 
@@ -126,7 +121,7 @@ plt.figure(figsize=(13, 10))
 sns.heatmap(
     cm, annot=True, fmt='d', cmap='Blues',
     xticklabels=[f'Cluster {i}' for i in range(n_clusters)],
-    yticklabels=target_names
+    yticklabels=[label_names.get(i, f'Class_{i+1}') for i in range(n_clusters)]
 )
 plt.title('Confusion Matrix: True Label vs K-means Cluster\n(CNN-LSTM Embeddings)', fontsize=14)
 plt.ylabel('True Label')
