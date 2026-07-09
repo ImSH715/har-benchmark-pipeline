@@ -14,7 +14,7 @@ print("Train and Test Split + Normalisation + Feature Extraction")
 
 
 # Path Configuration
-BASE_DIR = 'Dataset/Preprocessed'
+BASE_DIR = '../Dataset/Preprocessed'
 LABELED_DIR = f'{BASE_DIR}/label_unified'
 OUTPUT_DIR = BASE_DIR
 

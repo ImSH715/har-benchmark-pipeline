@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 import os
 import glob
-
+"""
 #RealDISP
-log_path =  glob.glob('Dataset/realdisp+activity+recognition+dataset/*_ideal.log')
+log_path =  glob.glob('../Dataset/realdisp+activity+recognition+dataset/*_ideal.log')
 
 print(f"Found : {len(log_path)}")
 print(f"Example : {log_path[0]}")
@@ -13,11 +13,11 @@ print(f"Example : {log_path[0]}")
 BACK_COLS = [54, 55, 56, 57, 58, 59, 119]
 COL_NAMES = ['AccX', 'AccY', 'AccZ', 'GyrX', 'GyrY', 'GyrZ', 'label']
 
-"""test_df = pd.read_csv(log_path[0], sep="\t", header=None, usecols=BACK_COLS)
+test_df = pd.read_csv(log_path[0], sep="\t", header=None, usecols=BACK_COLS)
 test_df.columns = COL_NAMES
 
 print(f"Loaded {log_path[0]}: {test_df.shape}")
-print(f"Label counts:\n{test_df['label'].value_counts().sort_index()}")"""
+print(f"Label counts:\n{test_df['label'].value_counts().sort_index()}")
 
 # Window crop
 def extract_windows_from_log(log_files, back_cols, col_names, window_size=128, step_size=64):
@@ -87,13 +87,13 @@ df_out = pd.DataFrame(flat, columns=cols)
 df_out['label'] = combined_labels
 
 # Save
-os.makedirs("Dataset/archive/Downsampled/Windowed", exist_ok= True)
-df_out.to_csv("Dataset/archive/Downsampled/Windowed/RealDISP_50Hz_2.56s.csv", index = False)
+os.makedirs('../Dataset/archive/Downsampled/Windowed', exist_ok= True)
+df_out.to_csv('../Dataset/archive/Downsampled/Windowed/RealDISP_50Hz_2.56s.csv', index = False)
 
 print("Saved ", df_out.shape)
-"""
+
 #UCI HAR Dataset
-base_path = 'Dataset/UCI HAR Dataset'
+base_path = '../Dataset/UCI HAR Dataset'
 
 train_files = {
     'AccX': f'{base_path}/train/Inertial Signals/body_acc_x_train.txt',
@@ -177,13 +177,13 @@ df_out['label'] = labels
 
 # Save
 os.makedirs("Dataset/archive/Downsampled/Windowed", exist_ok= True)
-df_out.to_csv("Dataset/archive/Downsampled/Windowed/UCI_HAR_50Hz_2.56s.csv", index = False)
+df_out.to_csv("../Dataset/archive/Downsampled/Windowed/UCI_HAR_50Hz_2.56s.csv", index = False)
 
 print("Saved ", df_out.shape)
 
+
 """
 """
-HARTH
 # Default values for windowing
 window_size = 128
 step_size = 64
@@ -192,9 +192,9 @@ windows = []
 window_labels = []
 
 # load HARTH train
-harth_train_path = pd.read_csv('Dataset/archive/train.csv')
+harth_train_path = pd.read_csv('../Dataset/archive/train.csv')
 # load HARTH test
-harth_test_path = pd.read_csv('Dataset/archive/test.csv')
+harth_test_path = pd.read_csv('../Dataset/archive/test.csv')
 
 print(f"Train Shape: {harth_train_path.shape}")
 print(f"Test Shape: {harth_test_path}")
@@ -254,13 +254,13 @@ df_out = pd.DataFrame(flat, columns=cols)
 df_out['label'] = labels_arr
 
 # Save
-os.makedirs("Dataset/archive/Downsampled/Windowed", exist_ok= True)
-df_out.to_csv("Dataset/archive/Downsampled/Windowed/HARTH_50Hz_2.56s.csv", index = False)
+os.makedirs("../Dataset/archive/Downsampled/Windowed", exist_ok= True)
+df_out.to_csv("../Dataset/archive/Downsampled/Windowed/HARTH_50Hz_2.56s.csv", index = False)
 
 print("Saved ", df_out.shape)
 """
 
-input_path = 'Dataset/KU-HAR/3.Time_domain_subsamples/KU-HAR_time_domain_subsamples_20750x300.csv'
+input_path = '../Dataset/KU-HAR/3.Time_domain_subsamples/KU-HAR_time_domain_subsamples_20750x300.csv'
 df = pd.read_csv(input_path, header=None)
 
 print(f"[INFO] Raw data shape: {df.shape}")
@@ -317,8 +317,8 @@ print(f" Final array shape: {data_all.shape}")
 
 df_processed = pd.DataFrame(data_all, columns=columns)
 
-os.makedirs("Dataset/KU-HAR/Downsampled", exist_ok=True)
-output_path = 'Dataset/archive/Downsampled/Windowed/KU-HAR_50Hz_2.56s.csv'
+os.makedirs("../Dataset/KU-HAR/Downsampled", exist_ok=True)
+output_path = '../Dataset/archive/Downsampled/Windowed/KU-HAR_50Hz_2.56s.csv'
 df_processed.to_csv(output_path, index=False)
 
 print(f" Saved to: {output_path}")

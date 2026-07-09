@@ -20,8 +20,8 @@ for dataset_name, mapping_dict in config['datasets'].items():
 print(f"Loaded label mappings for {len(LABEL_MAP)} datasets")
 
 # Paths
-INPUT_DIR = 'Dataset/Preprocessed/Windowed'
-OUTPUT_DIR = 'Dataset/Preprocessed/label_unified'
+INPUT_DIR = '../Dataset/Preprocessed/Windowed'
+OUTPUT_DIR = '../Dataset/Preprocessed/label_unified'
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
