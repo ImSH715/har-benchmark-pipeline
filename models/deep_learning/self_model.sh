@@ -11,7 +11,7 @@
 
 
 source ~/venv/bin/activate  
-
+conda init
 conda activate lejepa
 python self_supervised.py
 
