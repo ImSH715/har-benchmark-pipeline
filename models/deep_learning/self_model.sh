@@ -1,11 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=simclr_har
-#SBATCH --partition=gpu
+#SBATCH --partition=gpu        
+#SBATCH --gres=gpu:1         
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
-#SBATCH --time=24:00:00
-#SBATCH --output=logs/simclr_%j.out
-#SBATCH --error=logs/simclr_%j.err
+#SBATCH --time=24:00:00  
+#SBATCH --output=simclr_%j.out
+#SBATCH --error=simclr_%j.err
+
 
 source /opt/apps/testapps/common/software/staging/Anaconda3/2024.02-1/etc/profile.d/conda.sh
 

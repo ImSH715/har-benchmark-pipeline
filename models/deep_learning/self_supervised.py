@@ -25,7 +25,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 BATCH_SIZE = 512
-EPOCHS = 1000
+EPOCHS = 10000
 LR = 0.001
 TEMPERATURE = 0.1
 EMB_DIM = 128
